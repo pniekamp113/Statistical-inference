@@ -1,0 +1,155 @@
+---
+title: "Statistical Inference Part 2"
+author: "Patrick N"
+date: "2024-09-17"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+### Load required packages and data
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+ToothGrowth <- data.frame(ToothGrowth)
+
+
+```
+
+## Part 1 and 2
+### Perform exporatory data analysis on ToothGrowth data and provide a summary
+
+```{r}
+head(ToothGrowth)
+
+#Structure of the dataframe
+ToothGrowth %>% str()
+#Summary
+ToothGrowth %>% summary()
+
+Average_Len <- ToothGrowth %>% 
+  group_by(supp) %>% 
+  summarise(mean_len = mean(len))
+
+ggplot(Average_Len, aes(x = supp, y = mean_len)) + 
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Average Tooth Length by Supplement",
+       x = "Supplement Type",
+       y = "Average Length")
+  
+
+
+```
+
+### We have a dataset with 60 observations and 3 variables
+### We see that OJ (Orange Juice) is associated with greater length than VC (Vitamin C)
+
+
+## PART 3
+### Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
+
+
+
+## Hyptothesis 1
+### Tooth length varies based on supplement taken. H0 = Tooth length does not vary depending on supplement
+### Bar plot showing differences grouped by dose
+
+```{r}
+
+#Barplot showing the length grouped by supp and dose
+# To compare OJ and VC, we have to check if the doses have the same n number
+#count number of doses for each supp
+
+Average_Len <- ToothGrowth %>% 
+  group_by(supp, dose) %>% 
+  summarise(mean_len = mean(len), n = n(), .groups = "drop")
+
+ggplot(Average_Len, aes(x = factor(dose), y = mean_len, fill = supp)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = n), vjust = -0.5, position = position_dodge(0.9)) +
+  labs(title = "Average Length by Supplement and Dose", 
+       x = "Dose", 
+       y = "Average Length") +
+  theme_minimal()
+
+
+```
+### The bar plot shows that all doses where given to 10 people for each supplment. We can continue on compare directly OJ and VC
+### Note that we can do multiple analyses here. We will focus on just a few for the sake of time. 
+
+
+```{r}
+
+OJ_len <- ToothGrowth %>% filter(supp=="OJ") %>% select(len)
+VC_len <- ToothGrowth %>% filter(supp=="VC") %>% select(len)
+
+t_test <- t.test(OJ_len, VC_len, paired = FALSE)
+print(t_test)
+p_val <- round(t_test$p.value,5)
+print(paste("The p value between OJ and VC is:", p_val))
+
+
+```
+## Conclusion 1: We see that if we combine all doses that there is no significant different. 
+### However, the bar plot above suggests that this is likely because the high dose (2.0)
+
+
+
+## Hypothesis 2
+### At a low dose (0.5), there is a difference between OJ and VC. H0 = There is no difference. 
+
+```{r}
+
+OJ_len_0.5 <- ToothGrowth %>% filter(supp=="OJ" & dose==0.5) %>% select(len)
+VC_len_0.5 <- ToothGrowth %>% filter(supp=="VC" & dose==0.5) %>% select(len)
+
+t_test_0.5 <- t.test(OJ_len_0.5, VC_len_0.5, paired = FALSE)
+print(t_test_0.5)
+p_val <- round(t_test_0.5$p.value,5)
+print(paste("The p value between OJ and VC is:", p_val))
+
+
+```
+## Conclusion 2: There is a significant difference between OJ and VC at a dose of 0.5. H0 is rejected. 
+
+
+
+## Hypothesis 3
+### At a medium dose (0.5), there is a difference between OJ and VC. H0 = There is no difference.
+
+```{r}
+
+OJ_len_1 <- ToothGrowth %>% filter(supp=="OJ" & dose==1.0) %>% select(len)
+VC_len_1 <- ToothGrowth %>% filter(supp=="VC" & dose==1.0) %>% select(len)
+
+t_test_1 <- t.test(OJ_len_1, VC_len_1, paired = FALSE)
+print(t_test_1)
+p_val <- round(t_test_1$p.value,5)
+print(paste("The p value between OJ and VC is:", p_val))
+
+
+```
+## Conclusion 3: There is a significant difference between OJ and VC at a dose of 1. H0 is rejected. 
+
+
+## Hypothesis 4
+### There is a difference between OJ dose of 0.5 and dose 1. H0 = There is no difference.  
+### Note that all possible permutations could be compared but this will be the last one we do right now.
+
+```{r}
+
+OJ_len_0.5 <- ToothGrowth %>% filter(supp=="OJ" & dose==0.5) %>% select(len)
+OJ_len_1 <- ToothGrowth %>% filter(supp=="OJ" & dose==1.0) %>% select(len)
+
+t_test_OJ <- t.test(OJ_len_0.5, OJ_len_1, paired = FALSE)
+print(t_test_OJ)
+p_val <- round(t_test_OJ$p.value,5)
+print(paste("The p value between OJ dose 0.5 and 1 is:", p_val))
+
+
+```
+
+## Conclusion 4: There is a significant difference between OJ doses of 0.5 and 1. H0 is rejected. 
