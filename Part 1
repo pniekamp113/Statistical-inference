@@ -1,0 +1,136 @@
+---
+title: "Statistical Inference"
+author: "Patrick N"
+date: "2024-09-17"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### Load required packages
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+```
+
+## Compare exponential distrbution with the Central Limit Theorem
+
+```{r}
+#parameters
+lambda <- 0.2
+n <- 40
+num.of.sim <- 1000
+set.seed(1)
+
+#create a matrix containing the results for the simulation
+
+sim_matrix <- matrix(data=rexp(n*num.of.sim, lambda), nrow = num.of.sim)
+#head(sim_matrix)
+```
+
+
+
+## PART 1
+### We compute the means and store the results in a dataframe which is what the dplyr and ggplot2 packages take as input and it's also the typical datastructure in R. So we create a dataframe, sim_means.
+### Here we want to compare the theoretical mean for an exponetial distribution, given by mu = 1/lambda = 5, to the mean of our simulated distribution.
+
+
+```{r }
+
+#compute mean for each of the 1000 simulations
+
+sim_means <- data.frame(means = apply(sim_matrix, 1, mean))
+
+total_mean <- sim_means %>%
+  summarise(simulated.mean = mean (means)) %>%
+  unlist()
+
+#Plot sample means distribution
+
+sim_means %>%
+  ggplot(aes(x = means)) + geom_histogram(alpha=0.4, binwidth= .25, fill = "salmon", col = "white") +
+  geom_vline(xintercept = total_mean , color="black", linewidth = 2) +
+  ggtitle("Distribution of simulated means")
+
+print(total_mean)
+
+```
+### The plot above shows that the distribution of he means is centered around the mean of our simulated distributions. 
+### The calculated mean of the simulations, 4.99 (black vertical line) is very close to the theoretical mean of 1/lambda = 5
+
+
+## PART 2
+### Compare variance of sample to theoretical variance 
+
+
+```{r}
+
+#Compute Variance of the sample means
+
+sd <- sim_means %>%
+  select(means) %>%
+  unlist() %>%
+  sd()
+var <- sd^2
+
+print(paste("Variance of the simulated samples is", var))
+
+#Theoretical variance
+theo_var <- (((1/lambda))/sqrt(40))^2
+
+print(paste("The theoretical variance is", theo_var))
+
+```
+
+
+### We can see that the calculated and theoretical variance are very close.
+
+
+
+## PART 3
+### Show that the distribution is approximately normal.
+### From the Central limit theorem we know that the distribution of averages of normalized variables becomes that of a standard normal distribution as the sample size increases. 
+
+### We need to normalize our sample means. Transform each mean according to the formula:
+
+### z-score = (xbar - 1/lambda) / (1/lambda / sqrt(n)) 
+
+### Based on the CLT the result should be a normal distribution centered at(more or less) zero. 
+
+```{r}
+
+#Compute mean of our normalized means
+z_mean <- sim_means %>%
+  mutate(z_score = (means-1/lambda) / (1/lambda / sqrt(n))) %>%
+  select(z_score) %>%
+  summarise(z_mean = mean(z_score)) %>%
+  unlist()
+print(z_mean)
+
+#create Z scores from the sample means
+
+sim_means %>% mutate(z_score = (means - 1/lambda) / (1/lambda / sqrt(n))) %>%
+  ggplot(aes(x = z_score)) +
+  geom_histogram(alpha=0.1,  binwidth = 0.3, fill="green", color="black", aes(y = after_stat(density))) +
+   stat_function(fun = dnorm, linewidth = 1.3) +
+   geom_vline(xintercept = z_mean, color="red", size = 0.5) +
+   ggtitle("Distribution of standardized \nsimulated means") +
+   xlab("z-scores")
+
+
+
+
+
+```
+
+### From the plot we can see that the calculated means are similar to the standard normal distribution. 
+
+
+
+
+
+
+
+
